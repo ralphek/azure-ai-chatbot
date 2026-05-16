@@ -51,8 +51,8 @@
       <mxGeometry x="840" y="180" width="540" height="465" as="geometry" />
     </mxCell>
 
-    <!-- Azure OpenAI Icon -->
-    <mxCell id="61" value="Azure OpenAI&lt;br/&gt;Service" style="shape=mxgraph.azure2.azure_openai;sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#0078D4;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontStyle=1;fontSize=10;" vertex="1" parent="1">
+    <!-- Azure OpenAI Icon (uses cognitive_services as universal fallback) -->
+    <mxCell id="61" value="Azure OpenAI&lt;br/&gt;Service" style="shape=mxgraph.azure2.cognitive_services;sketch=0;html=1;pointerEvents=1;dashed=0;fillColor=#0078D4;strokeColor=none;verticalLabelPosition=bottom;verticalAlign=top;align=center;fontStyle=1;fontSize=10;" vertex="1" parent="1">
       <mxGeometry x="883" y="250" width="65" height="65" as="geometry" />
     </mxCell>
 
