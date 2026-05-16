@@ -85,7 +85,23 @@ def chat():
     print(f"Content Safety (Layer 2): {'ACTIVE' if content_safety_active else 'NOT CONFIGURED'}")
     print("Type 'quit' or 'exit' to end the conversation.")
     print("=" * 50)
-    print("\nFinanceBot: Hello! I'm FinanceBot, your AI-powered finance assistant. I can help you with budgeting, investing, banking, and more. What's your finance question?\n")
+
+    try:
+        opening_response = client.chat.completions.create(
+            model=DEPLOYMENT_NAME,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": "Greet the user and briefly introduce yourself and what you can help with. Keep it to 2 sentences."},
+            ],
+            max_tokens=100,
+            temperature=0.9,
+        )
+        greeting = opening_response.choices[0].message.content
+    except Exception as e:
+        greeting = "Hello! I'm FinanceBot, your AI-powered finance assistant. What's your finance question?"
+
+    conversation_history.append({"role": "assistant", "content": greeting})
+    print(f"\nFinanceBot: {greeting}\n")
 
     while True:
         user_input = input("You: ").strip()
