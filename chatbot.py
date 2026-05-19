@@ -18,6 +18,44 @@ DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
 CONTENT_SAFETY_ENDPOINT = os.getenv("CONTENT_SAFETY_ENDPOINT")
 CONTENT_SAFETY_KEY = os.getenv("CONTENT_SAFETY_KEY")
 
+MEMORY_FILE = "memory.json"
+
+
+def load_memory() -> list:
+    if os.path.exists(MEMORY_FILE):
+        with open(MEMORY_FILE) as f:
+            return json.load(f)
+    return []
+
+
+def save_memory(history: list) -> None:
+    # Strip system message before saving — it's always re-added on load
+    to_save = [m for m in history if m.get("role") != "system"]
+    with open(MEMORY_FILE, "w") as f:
+        json.dump(to_save, f, indent=2)
+
+
+def clear_memory() -> None:
+    if os.path.exists(MEMORY_FILE):
+        os.remove(MEMORY_FILE)
+
+
+def _message_to_dict(message) -> dict:
+    """Convert a ChatCompletionMessage object to a plain dict for storage."""
+    if isinstance(message, dict):
+        return message
+    msg = {"role": message.role, "content": message.content}
+    if getattr(message, "tool_calls", None):
+        msg["tool_calls"] = [
+            {
+                "id": tc.id,
+                "type": tc.type,
+                "function": {"name": tc.function.name, "arguments": tc.function.arguments},
+            }
+            for tc in message.tool_calls
+        ]
+    return msg
+
 SYSTEM_PROMPT = """You are FinanceBot, a professional finance assistant.
 
 You ONLY answer questions related to:
@@ -121,7 +159,8 @@ def is_content_safe(text):
 
 
 def chat():
-    conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+    past = load_memory()
+    conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}] + past
 
     content_safety_active = bool(CONTENT_SAFETY_ENDPOINT and CONTENT_SAFETY_KEY)
 
@@ -130,7 +169,10 @@ def chat():
     print("Your personal finance assistant.")
     print(f"Content Safety (Layer 2): {'ACTIVE' if content_safety_active else 'NOT CONFIGURED'}")
     print("Stock price tool: ACTIVE (live data via Yahoo Finance)")
+    if past:
+        print(f"Memory: loaded {len(past)} previous messages")
     print("Type 'quit' or 'exit' to end the conversation.")
+    print("Type 'forget' to clear memory and start fresh.")
     print("=" * 50)
 
     try:
@@ -157,8 +199,15 @@ def chat():
             continue
 
         if user_input.lower() in ("quit", "exit"):
+            save_memory(conversation_history)
             print("\nFinanceBot: Goodbye! Stay financially savvy!")
             break
+
+        if user_input.lower() == "forget":
+            clear_memory()
+            conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
+            print("\nFinanceBot: Memory cleared. Starting fresh!\n")
+            continue
 
         # Layer 2: Azure AI Content Safety
         safe, reason = is_content_safe(user_input)
@@ -183,7 +232,7 @@ def chat():
 
             # --- Tool call loop ---
             while response.choices[0].finish_reason == "tool_calls":
-                conversation_history.append(message)
+                conversation_history.append(_message_to_dict(message))
 
                 for tool_call in message.tool_calls:
                     print(f"[Tool] Calling {tool_call.function.name}({tool_call.function.arguments})")
@@ -208,6 +257,7 @@ def chat():
 
             assistant_message = message.content
             conversation_history.append({"role": "assistant", "content": assistant_message})
+            save_memory(conversation_history)
             print(f"\nFinanceBot: {assistant_message}\n")
 
         except Exception as e:
