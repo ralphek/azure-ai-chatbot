@@ -4,6 +4,8 @@ import requests
 import yfinance as yf
 from openai import AzureOpenAI
 from dotenv import load_dotenv
+from cosmos_memory import CosmosMemory
+import rag
 
 load_dotenv()
 
@@ -18,26 +20,7 @@ DEPLOYMENT_NAME = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
 CONTENT_SAFETY_ENDPOINT = os.getenv("CONTENT_SAFETY_ENDPOINT")
 CONTENT_SAFETY_KEY = os.getenv("CONTENT_SAFETY_KEY")
 
-MEMORY_FILE = "memory.json"
-
-
-def load_memory() -> list:
-    if os.path.exists(MEMORY_FILE):
-        with open(MEMORY_FILE) as f:
-            return json.load(f)
-    return []
-
-
-def save_memory(history: list) -> None:
-    # Strip system message before saving — it's always re-added on load
-    to_save = [m for m in history if m.get("role") != "system"]
-    with open(MEMORY_FILE, "w") as f:
-        json.dump(to_save, f, indent=2)
-
-
-def clear_memory() -> None:
-    if os.path.exists(MEMORY_FILE):
-        os.remove(MEMORY_FILE)
+memory = CosmosMemory()
 
 
 def _message_to_dict(message) -> dict:
@@ -159,7 +142,7 @@ def is_content_safe(text):
 
 
 def chat():
-    past = load_memory()
+    past = memory.load()
     conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}] + past
 
     content_safety_active = bool(CONTENT_SAFETY_ENDPOINT and CONTENT_SAFETY_KEY)
@@ -169,8 +152,10 @@ def chat():
     print("Your personal finance assistant.")
     print(f"Content Safety (Layer 2): {'ACTIVE' if content_safety_active else 'NOT CONFIGURED'}")
     print("Stock price tool: ACTIVE (live data via Yahoo Finance)")
+    print("Memory: Azure Cosmos DB")
+    print("Knowledge base: Azure AI Search (RAG)")
     if past:
-        print(f"Memory: loaded {len(past)} previous messages")
+        print(f"Loaded {len(past)} messages from previous session.")
     print("Type 'quit' or 'exit' to end the conversation.")
     print("Type 'forget' to clear memory and start fresh.")
     print("=" * 50)
@@ -180,7 +165,7 @@ def chat():
             model=DEPLOYMENT_NAME,
             messages=[
                 {"role": "system", "content": SYSTEM_PROMPT},
-                {"role": "user", "content": "Greet the user, introduce yourself, mention you can look up live stock prices, and ask how you can help. Keep it to 2 sentences."},
+                {"role": "assistant", "content": "Greet the user, introduce yourself, mention you can look up live stock prices, and ask how you can help. Keep it to 2 sentences."},
             ],
             max_tokens=100,
             temperature=0.9,
@@ -199,12 +184,12 @@ def chat():
             continue
 
         if user_input.lower() in ("quit", "exit"):
-            save_memory(conversation_history)
+            memory.save(conversation_history)
             print("\nFinanceBot: Goodbye! Stay financially savvy!")
             break
 
         if user_input.lower() == "forget":
-            clear_memory()
+            memory.clear()
             conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}]
             print("\nFinanceBot: Memory cleared. Starting fresh!\n")
             continue
@@ -215,8 +200,19 @@ def chat():
             print("\nFinanceBot: I'm not able to respond to that message. Please keep the conversation respectful and on topic.\n")
             continue
 
+        # RAG: retrieve relevant knowledge and inject as context
+        rag_context = rag.search(user_input)
+        if rag_context:
+            print("[RAG] Relevant knowledge found.")
+            augmented_input = (
+                f"{user_input}\n\n"
+                f"[Relevant knowledge base context:\n{rag_context}]"
+            )
+        else:
+            augmented_input = user_input
+
         # Layer 1: GPT-4o with tools
-        conversation_history.append({"role": "user", "content": user_input})
+        conversation_history.append({"role": "user", "content": augmented_input})
 
         try:
             response = client.chat.completions.create(
@@ -257,7 +253,7 @@ def chat():
 
             assistant_message = message.content
             conversation_history.append({"role": "assistant", "content": assistant_message})
-            save_memory(conversation_history)
+            memory.save(conversation_history)
             print(f"\nFinanceBot: {assistant_message}\n")
 
         except Exception as e:

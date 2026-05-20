@@ -1,21 +1,32 @@
 """
 Feature verification tests — no Azure credentials required for most tests.
-Tests: stock tool, guardrail logic, dynamic greeting, content safety.
+Tests: stock tool, guardrail, dynamic greeting, content safety, CosmosDB memory, RAG.
 """
 import os
 import json
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, patch, PropertyMock
 
 os.environ.setdefault("AZURE_OPENAI_ENDPOINT", "https://mock.openai.azure.com/")
 os.environ.setdefault("AZURE_OPENAI_API_KEY", "mock-key")
 os.environ.setdefault("AZURE_OPENAI_DEPLOYMENT", "gpt-4o")
+os.environ.setdefault("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-3-small")
+os.environ.setdefault("COSMOS_ENDPOINT", "https://mock.documents.azure.com:443/")
+os.environ.setdefault("COSMOS_KEY", "mock-cosmos-key==")
+os.environ.setdefault("COSMOS_DATABASE", "financebot")
+os.environ.setdefault("COSMOS_CONTAINER", "memory")
+os.environ.setdefault("AZURE_SEARCH_ENDPOINT", "https://mock.search.windows.net")
+os.environ.setdefault("AZURE_SEARCH_KEY", "mock-search-key")
+os.environ.setdefault("AZURE_SEARCH_INDEX", "finance-docs")
 
-from chatbot import get_stock_price, run_tool, is_content_safe, SYSTEM_PROMPT, load_memory, save_memory, clear_memory
+# Patch CosmosClient before any import touches it
+with patch("azure.cosmos.CosmosClient"):
+    from chatbot import get_stock_price, run_tool, is_content_safe, SYSTEM_PROMPT
+    import rag
 
 PASS = "PASS"
 FAIL = "FAIL"
-
 results = []
+
 
 def check(label, condition, detail=""):
     status = PASS if condition else FAIL
@@ -60,13 +71,10 @@ print("=" * 55)
 
 check("System prompt contains finance restriction",
       "ONLY answer questions related to" in SYSTEM_PROMPT)
-
 check("System prompt defines rejection message",
       "I'm a finance assistant and can only help with finance-related topics" in SYSTEM_PROMPT)
-
 check("System prompt mentions stock tool usage",
       "get_stock_price" in SYSTEM_PROMPT)
-
 check("System prompt blocks investment advice",
       "Do not give specific investment advice" in SYSTEM_PROMPT)
 
@@ -90,7 +98,6 @@ with patch("chatbot.client") as mock_client:
     mock_response.choices[0].message.content = mock_greeting
     mock_client.chat.completions.create.return_value = mock_response
 
-    from chatbot import client as c
     resp = mock_client.chat.completions.create(
         model="gpt-4o",
         messages=[
@@ -109,39 +116,89 @@ check("API called with system prompt", mock_client.chat.completions.create.calle
 
 # ─────────────────────────────────────────
 print("\n" + "=" * 55)
-print("TEST 6: Persistent Memory (JSON)")
+print("TEST 6: Cosmos DB Memory (mocked)")
 print("=" * 55)
 
-# Start clean
-clear_memory()
-check("clear_memory removes file", not __import__("os").path.exists("memory.json"))
+with patch("cosmos_memory.CosmosClient") as MockCosmosClient:
+    mock_container = MagicMock()
+    MockCosmosClient.return_value \
+        .create_database_if_not_exists.return_value \
+        .create_container_if_not_exists.return_value = mock_container
 
-# Save some messages
-fake_history = [
-    {"role": "system", "content": SYSTEM_PROMPT},
-    {"role": "user", "content": "What is a P/E ratio?"},
-    {"role": "assistant", "content": "P/E ratio is price divided by earnings per share."},
-]
-save_memory(fake_history)
-check("save_memory creates memory.json", __import__("os").path.exists("memory.json"))
+    from cosmos_memory import CosmosMemory
+    mem = CosmosMemory()
 
-# Load it back — system message should be excluded from the file
-loaded = load_memory()
-check("load_memory returns saved messages", len(loaded) == 2,
-      f"loaded {len(loaded)} messages (system excluded)")
+    fake_history = [
+        {"role": "system", "content": SYSTEM_PROMPT},
+        {"role": "user", "content": "What is a P/E ratio?"},
+        {"role": "assistant", "content": "P/E ratio is price divided by earnings per share."},
+    ]
 
-check("loaded content is correct (user message)",
-      loaded[0]["role"] == "user" and "P/E ratio" in loaded[0]["content"])
+    # Test save — system message must be stripped
+    mem.save(fake_history)
+    upsert_call = mock_container.upsert_item.call_args[0][0]
+    check("save strips system message before writing",
+          all(m["role"] != "system" for m in upsert_call["messages"]),
+          f"saved roles: {[m['role'] for m in upsert_call['messages']]}")
+    check("save writes user and assistant messages",
+          len(upsert_call["messages"]) == 2)
 
-check("loaded content is correct (assistant message)",
-      loaded[1]["role"] == "assistant" and "earnings" in loaded[1]["content"])
+    # Test load
+    mock_container.read_item.return_value = {
+        "id": "default",
+        "userId": "default",
+        "messages": [
+            {"role": "user", "content": "What is a P/E ratio?"},
+            {"role": "assistant", "content": "P/E ratio is price divided by earnings per share."},
+        ],
+    }
+    loaded = mem.load()
+    check("load returns saved messages", len(loaded) == 2,
+          f"loaded {len(loaded)} messages")
+    check("loaded user message correct",
+          loaded[0]["role"] == "user" and "P/E" in loaded[0]["content"])
+    check("loaded assistant message correct",
+          loaded[1]["role"] == "assistant")
 
-# Clear and verify gone
-clear_memory()
-check("clear_memory wipes the file", not __import__("os").path.exists("memory.json"))
+    # Test load when no item exists
+    from azure.cosmos import exceptions
+    mock_container.read_item.side_effect = exceptions.CosmosResourceNotFoundError(404, "Not found")
+    empty = mem.load()
+    check("load returns [] when no history exists", empty == [])
 
-# load_memory returns empty list when no file exists
-check("load_memory returns [] when no file", load_memory() == [])
+    # Test clear
+    mock_container.read_item.side_effect = None
+    mem.clear()
+    check("clear calls delete on container", mock_container.delete_item.called)
+
+# ─────────────────────────────────────────
+print("\n" + "=" * 55)
+print("TEST 7: RAG — Azure AI Search (mocked)")
+print("=" * 55)
+
+with patch("rag.SearchClient") as MockSearchClient, \
+     patch("rag._openai_client") as mock_openai:
+
+    # Mock embedding response
+    mock_embed_resp = MagicMock()
+    mock_embed_resp.data[0].embedding = [0.1] * 1536
+    mock_openai.return_value.embeddings.create.return_value = mock_embed_resp
+
+    # Mock search results
+    mock_results = [
+        {"content": "P/E Ratio is price divided by earnings per share. Typical S&P 500 P/E is 15-25."},
+        {"content": "Value investors prefer P/E ratios below 15."},
+    ]
+    MockSearchClient.return_value.search.return_value = iter(mock_results)
+
+    context = rag.search("What is a good P/E ratio?", top=2)
+
+    check("RAG search returns context string", isinstance(context, str) and len(context) > 0,
+          f"context length: {len(context)} chars")
+    check("RAG context contains relevant content",
+          "P/E" in context)
+    check("RAG chunks separated by divider", "---" in context)
+    check("Embedding was called once", mock_openai.return_value.embeddings.create.called)
 
 # ─────────────────────────────────────────
 print("\n" + "=" * 55)

@@ -2,3 +2,5 @@ openai>=1.13.0
 python-dotenv>=1.0.0
 requests>=2.31.0
 yfinance>=0.2.36
+azure-cosmos>=4.5.0
+azure-search-documents>=11.4.0
