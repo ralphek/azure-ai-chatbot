@@ -73,7 +73,7 @@ agent = Agent(
     db=db,
     add_history_to_context=True,
     num_history_runs=10,
-    show_tool_calls=True,
+    debug_mode=True,
     markdown=True,
 )
 
