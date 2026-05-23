@@ -24,6 +24,11 @@ INDEX_NAME = os.getenv("AZURE_SEARCH_INDEX", "finance-docs")
 EMBEDDING_DEPLOYMENT = os.getenv("AZURE_OPENAI_EMBEDDING_DEPLOYMENT", "text-embedding-3-small")
 EMBEDDING_DIMENSIONS = 1536
 
+# Field names differ between manually created index and portal-created index
+# Portal wizard uses: chunk, text_vector — manual ingest uses: content, content_vector
+VECTOR_FIELD = "text_vector" if INDEX_NAME == "financebot" else "content_vector"
+CONTENT_FIELD = "chunk" if INDEX_NAME == "financebot" else "content"
+
 
 def _openai_client():
     return AzureOpenAI(
@@ -83,14 +88,14 @@ def search(query: str, top: int = 3) -> str:
         vector_query = VectorizedQuery(
             vector=query_vector,
             k_nearest_neighbors=top,
-            fields="content_vector",
+            fields=VECTOR_FIELD,
         )
         results = list(search_client.search(
             search_text=query,
             vector_queries=[vector_query],
             top=top,
         ))
-        chunks = [r["content"] for r in results if r.get("content")]
+        chunks = [r[CONTENT_FIELD] for r in results if r.get(CONTENT_FIELD)]
         return "\n\n---\n\n".join(chunks) if chunks else ""
     except Exception as e:
         print(f"[RAG] Search warning: {e}")

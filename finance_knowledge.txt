@@ -1,0 +1,47 @@
+FINANCEBOT KNOWLEDGE BASE
+==========================
+
+--- P/E RATIO ---
+P/E Ratio (Price-to-Earnings): A valuation metric calculated by dividing the stock price by earnings per share (EPS). A high P/E may indicate the stock is overvalued or that investors expect high growth. The S&P 500 average P/E ratio is typically between 15-25. Value investors prefer low P/E stocks (below 15), while growth stocks often trade at P/E ratios of 30 or higher.
+
+--- DOLLAR-COST AVERAGING ---
+Dollar-Cost Averaging (DCA): An investment strategy where you invest a fixed amount at regular intervals regardless of the asset price. This reduces the impact of volatility. Example: investing $500 monthly into an S&P 500 ETF regardless of market conditions. Over time, you buy more shares when prices are low and fewer when prices are high, resulting in a lower average cost per share.
+
+--- EMERGENCY FUND ---
+Emergency Fund: A financial safety net of 3-6 months of living expenses kept in a liquid, low-risk account such as a high-yield savings account. This fund protects against unexpected expenses like job loss, medical bills, or car repairs without going into debt. Most financial advisors recommend building this before investing.
+
+--- BULL MARKET VS BEAR MARKET ---
+Bull Market vs Bear Market: A bull market is a period of rising stock prices (20%+ gain), typically associated with strong economic growth and investor confidence. A bear market is a sustained decline of 20% or more from recent highs, often associated with economic recession. The average bull market lasts about 4.5 years; the average bear market lasts about 9.6 months.
+
+--- INDEX FUNDS AND ETFS ---
+Index Funds and ETFs: Index funds track a market index like the S&P 500 (500 largest US companies). ETFs (Exchange-Traded Funds) are similar but trade like stocks throughout the day. Both offer diversification at low cost. The S&P 500 has historically returned approximately 10% annually before inflation. Warren Buffett recommends low-cost S&P 500 index funds for most investors.
+
+--- COMPOUND INTEREST ---
+Compound Interest: The process where interest is earned on both the initial principal and previously accumulated interest. Example: $10,000 invested at 7% annually becomes $76,123 after 30 years. Starting early is critical — investing $200/month from age 25 to 65 at 7% yields approximately $525,000, while starting at 35 yields only $243,000.
+
+--- DIVERSIFICATION ---
+Diversification: Spreading investments across different asset classes, sectors, and geographies to reduce risk. A diversified portfolio might include US stocks, international stocks, bonds, and real estate. Modern Portfolio Theory shows diversification can reduce portfolio volatility without sacrificing returns.
+
+--- HIGH-YIELD SAVINGS ACCOUNT ---
+High-Yield Savings Account (HYSA): A savings account offering significantly higher interest rates than traditional savings accounts. Rates in 2024 ranged from 4-5% APY compared to the national average of 0.46%. Typically offered by online banks. FDIC insured up to $250,000. Ideal for emergency funds and short-term savings goals.
+
+--- BONDS ---
+Bonds: Debt instruments where an investor loans money to a government or corporation in exchange for periodic interest payments and return of principal at maturity. Government bonds (Treasuries) are considered low-risk. Corporate bonds offer higher yields but carry more risk. Bond prices move inversely to interest rates — when rates rise, bond prices fall.
+
+--- 401(K) RETIREMENT PLAN ---
+401(k) Retirement Plan: Employer-sponsored retirement savings account allowing pre-tax contributions up to $23,000/year (2024 limit). Many employers match contributions up to a percentage — always contribute enough to get the full match (it is free money). Funds grow tax-deferred until withdrawal at retirement (age 59.5+). Early withdrawal incurs a 10% penalty plus income tax.
+
+--- INFLATION ---
+Inflation: The rate at which the general price level of goods and services rises, eroding purchasing power. The Federal Reserve targets 2% annual inflation. High inflation (above 4-5%) reduces the real value of savings and fixed-income investments. Stocks and real estate historically outpace inflation over the long term. TIPS (Treasury Inflation-Protected Securities) are bonds designed to keep pace with inflation.
+
+--- ASSET ALLOCATION ---
+Asset Allocation: The strategy of dividing a portfolio among different asset categories such as stocks, bonds, and cash. A common rule of thumb: subtract your age from 110 to get your stock percentage (e.g., age 30 = 80% stocks, 20% bonds). More aggressive allocations suit younger investors with longer time horizons; conservative allocations suit those nearing retirement.
+
+--- DIVIDEND INVESTING ---
+Dividend Investing: A strategy focusing on stocks that pay regular cash dividends to shareholders. Dividends provide passive income and can be reinvested to compound returns. Dividend yield = annual dividend / stock price. High-yield dividend stocks (above 4%) can signal financial strength or potential instability. Dividend aristocrats are companies that have increased dividends for 25+ consecutive years.
+
+--- CREDIT SCORE ---
+Credit Score: A numerical rating (300-850) representing creditworthiness, used by lenders to evaluate loan applications. Scores above 740 are considered excellent. Key factors: payment history (35%), credit utilization (30%), length of credit history (15%), credit mix (10%), new credit (10%). Improving your score: pay bills on time, keep utilization below 30%, avoid opening too many accounts at once.
+
+--- MORTGAGE ---
+Mortgage: A loan used to purchase real estate, where the property serves as collateral. Fixed-rate mortgages lock in an interest rate for the life of the loan (15 or 30 years). Adjustable-rate mortgages (ARMs) have rates that change after an initial fixed period. A 20% down payment avoids Private Mortgage Insurance (PMI). Total housing costs should ideally not exceed 28% of gross monthly income.
