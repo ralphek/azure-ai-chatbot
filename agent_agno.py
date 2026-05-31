@@ -12,8 +12,9 @@ from dotenv import load_dotenv
 from agno.agent import Agent
 from agno.models.azure.openai_chat import AzureOpenAI
 from agno.tools.yfinance import YFinanceTools
-from agno.db.sqlite import SqliteDb
+from cosmos_agno_db import CosmosDb
 import rag
+import document_analysis
 
 load_dotenv(override=True)
 
@@ -28,6 +29,7 @@ You ONLY answer questions related to:
 
 When the user asks about a stock, use the YFinance tools to fetch live data.
 When the user asks about a finance concept, use search_knowledge_base first.
+When the user provides a file path or document URL, use analyze_finance_document to extract the content, then give a finance-focused summary of what you find (key numbers, ratios, risks, recommendations).
 
 If the user asks about ANYTHING outside of finance, respond with exactly:
 "I'm a finance assistant and can only help with finance-related topics. Do you have a finance question I can help with?"
@@ -40,6 +42,13 @@ def search_knowledge_base(query: str) -> str:
     """Search the finance knowledge base for definitions, concepts, and strategies (e.g. P/E ratio, DCA, bonds, 401k)."""
     context = rag.search(query, top=3)
     return context if context else "No relevant documents found in the knowledge base."
+
+
+def analyze_finance_document(file_path: str) -> str:
+    """Extract and return all text and tables from a local file (PDF, DOCX, PNG, JPG, XLSX) or a public URL so you can analyze its financial content."""
+    if file_path.startswith("http://") or file_path.startswith("https://"):
+        return document_analysis.analyze_url(file_path)
+    return document_analysis.analyze_file(file_path)
 
 
 # ── Agno skillsets replacing manual Python code ──────────────────────────────
@@ -55,19 +64,22 @@ yfinance_tools = YFinanceTools(
     enable_company_news=True,          # latest headlines
 )
 
-# SqliteDb replaces CosmosMemory — stores full session history locally.
-db = SqliteDb(db_file="agno_sessions.db")
+# Shared Azure OpenAI model — import this in other agents instead of re-declaring it.
+azure_model = AzureOpenAI(
+    id=os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o"),
+    azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
+    azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o"),
+    api_key=os.getenv("AZURE_OPENAI_API_KEY"),
+    api_version="2024-02-01",
+    temperature=0.7,
+)
+
+# CosmosDb stores full Agno session history in Azure CosmosDB (cloud).
+db = CosmosDb(container_name="agno_sessions")
 
 agent = Agent(
-    model=AzureOpenAI(
-        id=os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o"),
-        azure_endpoint=os.getenv("AZURE_OPENAI_ENDPOINT"),
-        azure_deployment=os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4o"),
-        api_key=os.getenv("AZURE_OPENAI_API_KEY"),
-        api_version="2024-02-01",
-        temperature=0.7,
-    ),
-    tools=[yfinance_tools, search_knowledge_base],
+    model=azure_model,
+    tools=[yfinance_tools, search_knowledge_base, analyze_finance_document],
     instructions=SYSTEM_PROMPT,
     db=db,
     add_history_to_context=True,
@@ -81,7 +93,7 @@ def chat():
     print("FinanceBot — Powered by Agno + Azure OpenAI")
     print("Skillsets : YFinanceTools (stock, fundamentals, news)")
     print("Knowledge : Azure AI Search RAG")
-    print("Memory    : SQLite session storage (Agno built-in)")
+    print("Memory    : Azure CosmosDB session storage")
     print("Type 'quit' or 'exit' to end.")
     print("=" * 55)
     print("\nFinanceBot: Hello! I'm FinanceBot. I can look up live stock prices, fundamentals, analyst ratings, and answer finance questions. How can I help?\n")

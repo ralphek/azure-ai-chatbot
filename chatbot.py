@@ -145,7 +145,7 @@ def chat():
     past = memory.load()
     conversation_history = [{"role": "system", "content": SYSTEM_PROMPT}] + past
 
-    content_safety_active = bool(CONTENT_SAFETY_ENDPOINT and CONTENT_SAFETY_KEY)
+    content_safety_active = boolF(CONTENT_SAFETY_ENDPOINT and CONTENT_SAFETY_KEY)
 
     print("=" * 50)
     print("FinanceBot — Powered by Azure OpenAI GPT-4o")

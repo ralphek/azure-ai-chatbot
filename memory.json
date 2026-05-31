@@ -68,5 +68,44 @@
   {
     "role": "assistant",
     "content": "The current price of SPY (SPDR S&P 500 ETF Trust) is $738.65 USD, with a change of -0.07%. Its 52-week high is $749.53, and the 52-week low is $575.60.\n\nLet me know if you need further assistance!"
+  },
+  {
+    "role": "assistant",
+    "content": "Hello, I'm FinanceBot, your professional finance assistant! I can help with personal finance, investing, banking, and more\u2014plus provide live stock prices if needed. How can I assist you today?"
+  },
+  {
+    "role": "user",
+    "content": "Can you get me the price of Sp500"
+  },
+  {
+    "role": "assistant",
+    "content": "The S&P 500 is an index, not a stock, so it doesn't have a direct price. However, you can track its performance through ETFs that replicate the index, such as SPY (SPDR S&P 500 ETF Trust).\n\nWould you like me to fetch the current price of SPY for you?"
+  },
+  {
+    "role": "user",
+    "content": "Yes"
+  },
+  {
+    "role": "assistant",
+    "content": null,
+    "tool_calls": [
+      {
+        "id": "call_fKVlBTEhY7XSMfIMTweSoEaF",
+        "type": "function",
+        "function": {
+          "name": "get_stock_price",
+          "arguments": "{\"ticker\":\"SPY\"}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "tool",
+    "tool_call_id": "call_fKVlBTEhY7XSMfIMTweSoEaF",
+    "content": "{\"ticker\": \"SPY\", \"company\": \"State Street SPDR S&P 500 ETF T\", \"price\": 732.6, \"currency\": \"USD\", \"change_percent\": -0.82, \"market_cap\": null, \"52w_high\": 749.53, \"52w_low\": 575.6}"
+  },
+  {
+    "role": "assistant",
+    "content": "The current price of SPY (SPDR S&P 500 ETF Trust) is $732.60 USD, with a change of -0.82%. Its 52-week high is $749.53, and the 52-week low is $575.60.\n\nLet me know if you need further assistance!"
   }
 ]
